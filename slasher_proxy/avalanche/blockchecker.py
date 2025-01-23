@@ -11,4 +11,3 @@ def check_block(notification_from_postgres):
         block = Block.get(number=num_block)
         LOGGER.info(f"Block {num_block} hash {block.hash.encode('hex')}")
     # Add some processing logic here, e.g., validate block, etc.
-

@@ -1,6 +1,8 @@
+import traceback
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
-import traceback
+
 
 async def debug_exception_middleware(request: Request, call_next):
     try:
@@ -8,8 +10,5 @@ async def debug_exception_middleware(request: Request, call_next):
     except Exception as exc:
         return JSONResponse(
             status_code=500,
-            content={
-                "detail": str(exc),
-                "traceback": traceback.format_exc()
-            }
+            content={"detail": str(exc), "traceback": traceback.format_exc()},
         )

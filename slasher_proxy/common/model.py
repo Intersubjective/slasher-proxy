@@ -14,11 +14,12 @@ class Block(db.Entity):
     hash = orm.Required(bytes, unique=True)
     raw_content = orm.Required(bytes)
 
+
 class Commitment(db.Entity):
     transaction_hash = orm.PrimaryKey(bytes)
     content = orm.Required(bytes, unique=True)
 
+
 class AuxiliaryData(db.Entity):
     key = orm.PrimaryKey(str)
     value = orm.Optional(str)
-

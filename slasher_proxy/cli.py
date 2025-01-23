@@ -1,8 +1,10 @@
-import uvicorn
 import click
+import uvicorn
+
+from slasher_proxy.asgi import create_slasher_app
 from slasher_proxy.common.log import LOGGER
 from slasher_proxy.common.settings import get_settings
-from slasher_proxy.asgi import create_slasher_app
+
 
 @click.group()
 @click.option(
@@ -17,6 +19,7 @@ def cli(ctx, env_file):
     ctx.ensure_object(dict)
     settings = get_settings(env_file)
     LOGGER.setLevel(settings.log_level)
+
 
 @cli.command()
 @click.pass_context

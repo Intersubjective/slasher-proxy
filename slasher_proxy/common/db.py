@@ -11,8 +11,7 @@ class GetOrInsertMixin:
         return cls.get(**kwargs) or cls(**kwargs)
 
 
-
-def start_db(dsn:PostgresDsn, network_name=None):
+def start_db(dsn: PostgresDsn, network_name=None):
     db.bind(provider="postgres", dsn=str(dsn))
     db.generate_mapping(create_tables=True)
     check_db_version(network_name)

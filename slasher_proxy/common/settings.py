@@ -1,16 +1,21 @@
-from functools import lru_cache
 from typing import Optional
+
 import logging
-from pydantic import PostgresDsn, Field, field_validator
+from functools import lru_cache
+
+from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings
 
-VALID_LOG_LEVELS = {logging.getLevelName(level) for level in
-                    (logging.DEBUG,
-                     logging.INFO,
-                     logging.WARNING,
-                     logging.ERROR,
-                     logging.CRITICAL)}
-
+VALID_LOG_LEVELS = {
+    logging.getLevelName(level)
+    for level in (
+        logging.DEBUG,
+        logging.INFO,
+        logging.WARNING,
+        logging.ERROR,
+        logging.CRITICAL,
+    )
+}
 
 
 # Pydantic will try to load .env file if it exists. Alternatively, you can manually load
@@ -18,6 +23,7 @@ VALID_LOG_LEVELS = {logging.getLevelName(level) for level in
 # Notea that the variables loaded from the .env file will not pass on to the whole app,
 # they will be used only to init Pydantic settings.
 # You can altogether use just the real environment variables, completely ignoring the .env file.
+
 
 class SlasherRpcProxySettings(BaseSettings):
     port: int = 5500
@@ -29,20 +35,23 @@ class SlasherRpcProxySettings(BaseSettings):
     network_name: Optional[str] = Field("avalanche")
 
     @classmethod
-    @field_validator('log_level')
+    @field_validator("log_level")
     def validate_log_level(cls, v: Optional[str]) -> str:
         if v is None:
             return logging.INFO
 
         v_upper = v.upper()
         if v_upper not in VALID_LOG_LEVELS:
-            raise ValueError(f'Invalid log level. Allowed values are {VALID_LOG_LEVELS}')
+            raise ValueError(
+                f"Invalid log level. Allowed values are {VALID_LOG_LEVELS}"
+            )
 
         return v_upper
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
 
 def create_get_settings():
     settings_instance = None
@@ -52,7 +61,11 @@ def create_get_settings():
         nonlocal settings_instance
         if settings_instance is None or env_file:
             # load_dotenv(env_file) - this one is redundant but maybe useful in future
-            settings_instance = SlasherRpcProxySettings() if env_file is None else SlasherRpcProxySettings(_env_file=env_file)
+            settings_instance = (
+                SlasherRpcProxySettings()
+                if env_file is None
+                else SlasherRpcProxySettings(_env_file=env_file)
+            )
         return settings_instance
 
     def _set_settings(new_settings: SlasherRpcProxySettings):
@@ -61,5 +74,6 @@ def create_get_settings():
         get_settings.cache_clear()
 
     return _get_settings, _set_settings
+
 
 get_settings, set_settings = create_get_settings()

@@ -22,7 +22,9 @@ def check_db_version(network_name):
         AuxiliaryData(key=DB_VERSION_KEY, value=CURRENT_DB_VERSION)
         AuxiliaryData(key=NETWORK_NAME_KEY, value=network_name)
     else:
-        if (name_in_db := AuxiliaryData.get(key=NETWORK_NAME_KEY).value) != network_name:
+        if (
+            name_in_db := AuxiliaryData.get(key=NETWORK_NAME_KEY).value
+        ) != network_name:
             LOGGER.error(
                 "DB network name mismatch. Expected: %s, Actual: %s.",
                 network_name,

@@ -3,13 +3,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from .common.debug_middleware import debug_exception_middleware
-from .common.log import LOGGER
 from .avalanche import proxy_router
 from .avalanche.blockchecker import check_block
 from .common.db import start_db
+from .common.debug_middleware import debug_exception_middleware
+from .common.log import LOGGER
 from .common.postgres_notify import create_notification_listener
-
 from .common.settings import get_settings
 
 
@@ -24,13 +23,15 @@ async def lifespan(app: FastAPI):
         LOGGER.info("Starting LISTEN to Postgres")
         app.state.block_checker_task = asyncio.create_task(
             create_notification_listener(
-                str(settings.dsn),
-                settings.blocks_channel,
-                check_block))
+                str(settings.dsn), settings.blocks_channel, check_block
+            )
+        )
     else:
-        LOGGER.info("Can't LISTEN to postgres blocks updates: no NOTIFY channel name provided. "+
-                    "BLOCKS_CHANNEL env var or settings.blocks_channel field must be set to a "+
-                    "valid channel name for Postgres LISTEN to work correctly!")
+        LOGGER.info(
+            "Can't LISTEN to postgres blocks updates: no NOTIFY channel name provided. "
+            + "BLOCKS_CHANNEL env var or settings.blocks_channel field must be set to a "
+            + "valid channel name for Postgres LISTEN to work correctly!"
+        )
         app.state.block_checker_task = None
 
     yield
@@ -47,7 +48,7 @@ def create_slasher_app() -> FastAPI:
     LOGGER.setLevel(settings.log_level)
     app = FastAPI(title="Slasher RPC Proxy", lifespan=lifespan)
 
-    app.middleware('http')(debug_exception_middleware)
+    app.middleware("http")(debug_exception_middleware)
     app.include_router(proxy_router.router)
     LOGGER.info("Returning app instance")
 
