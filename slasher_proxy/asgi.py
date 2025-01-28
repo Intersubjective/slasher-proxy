@@ -19,6 +19,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     start_db(settings.dsn, network_name=settings.network_name)
 
+    app.state.block_checker_task = None
+
     if settings.blocks_channel:
         LOGGER.info("Starting LISTEN to Postgres")
         app.state.block_checker_task = asyncio.create_task(
@@ -34,14 +36,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "field must be set to a valid channel name "
             "for Postgres LISTEN to work correctly!"
         )
-        app.state.block_checker_task = None
 
-    yield
-
-    if app.state.block_checker_task:
-        LOGGER.info("Stopping LISTEN to Postgres")
-        app.state.block_checker_task.cancel()
-        await app.state.block_checker_task
+    try:
+        yield
+    finally:
+        if app.state.block_checker_task:
+            LOGGER.info("Stopping LISTEN to Postgres")
+            app.state.block_checker_task.cancel()
 
 
 def create_slasher_app() -> FastAPI:

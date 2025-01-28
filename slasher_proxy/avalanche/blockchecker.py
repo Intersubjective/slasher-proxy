@@ -9,5 +9,8 @@ def check_block(notification_from_postgres):
     LOGGER.info(f"Block {num_block} notification received")
     with db_session:
         block = Block.get(number=num_block)
-        LOGGER.info(f"Block {num_block} hash {block.hash.encode('hex')}")
+    if block is None:
+        LOGGER.warning(f"Block {num_block} not found in the database")
+        return
+    LOGGER.info(f"Block {num_block} hash {block.hash.hex()}")
     # Add some processing logic here, e.g., validate block, etc.

@@ -5,12 +5,12 @@ import asyncpg_listen
 from slasher_proxy.common.log import LOGGER
 
 
-async def create_notification_listener(
+def create_notification_listener(
     postgres_url: str, channel_name: str, callback: Callable[[str | None], Any]
 ) -> Coroutine[Any, Any, None]:
-    listener = asyncpg_listen.NotificationListener(
-        asyncpg_listen.connect_func(dsn=postgres_url)
-    )
+    LOGGER.info("Creating notification listener for channel %s", channel_name)
+    conn = asyncpg_listen.connect_func(dsn=postgres_url)
+    listener = asyncpg_listen.NotificationListener(conn)
 
     async def handle_notifications(
         notification: asyncpg_listen.NotificationOrTimeout,
