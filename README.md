@@ -1,28 +1,27 @@
 
 
 
-# template-python
-Python service template for reuse.
+# Slasher-proxy
+An experimental proxy for Alchemy-style RPC sendRawTransaction calls.
+
 
   * [Installation](#installation)
   * [Package](#package)
   * [Docker](#docker)
-  * [Helm chart](#helm-chart)
-  * [OpenaAPI schema](#openaapi-schema)
   * [Release](#release)
   * [GitHub Actions](#github-actions)
     + [Web service](#web-service)
-    + [Library](#library)
   * [Act](#act)
-  * [Prometheus metrics](#prometheus-metrics)
-  * [Classy-FastAPI](#classy-fastapi)
-- [Collaboration guidelines](#collaboration-guidelines)
 
 
 ## Table of Contents
 
-- [template-python](#template-python)
+- [slasher-proxy](#slasher-proxy)
   - [Table of Contents](#table-of-contents)
+  - [Postgres LISTEN/NOTIFY mechanism](#postgres-listennotify-mechanism)
+  - [Configuration settings](#configuration-settings)
+    - [Notification trigger](#notification-trigger) 
+    - [Debugging the LISTEN/NOTIFY connection](#debugging-the-listennotify-connection)
   - [Prerequisites](#prerequisites)
     - [Development](#development)
     - [Deployment](#deployment)
@@ -32,19 +31,85 @@ Python service template for reuse.
     - [Step 3: Install Python 3.12](#step-3-install-python-312)
     - [Step 4: Connect Poetry to it](#step-4-connect-poetry-to-it)
   - [Docker](#docker)
-  - [Manual build and deployment on minikube](#manual-build-and-deployment-on-minikube)
   - [Package](#package)
-  - [Helm chart](#helm-chart)
-  - [OpenaAPI schema](#openaapi-schema)
   - [Release](#release)
-  - [Helm Chart Versioning](#helm-chart-versioning)
   - [GitHub Actions](#github-actions)
     - [Web service](#web-service)
-    - [Library](#library)
   - [Act](#act)
-  - [Prometheus metrics](#prometheus-metrics)
-  - [Classy-FastAPI](#classy-fastapi)
-- [Collaboration guidelines](#collaboration-guidelines)
+
+## Configuration settings
+The Proxy uses BaseSettings package from Pydantic, meaning that it will gather 
+the settings from (lower number has higher priority):
+1. Environment variables
+2. `.env` file located in the app dir
+3. Custom-provided environment variables file (when running in the CLI mode)
+
+Pydantic verifies the correctness of the provided values. The typical `.env` file should look like:
+```env
+RPC_URL="http://localhost.localhost"
+DSN="postgresql://slasher_user:somepassword@localhost:5432/slasher_db"
+BLOCKS_CHANNEL="new_block"
+LOG_LEVEL="DEBUG"
+```
+* `RPC_URL` (required) should point to the actual node RPC  (e.g. modified Avalanche node RPC)
+* `DSN` (required) is the connection URL to the Postgre database to store the blocks, commitments, and transactions 
+* `BLOCKS_CHANNEL` (required) the name of the LISTEN/NOTIFY channel over which Postgres will notify the Proxy about new blocks
+* `LOG_LEVEL`(optional) - says for itself
+
+## Postgres LISTEN/NOTIFY mechanism
+Slasher-proxy receives notifications about new blocks from Postgres through LISTEN/NOTIFY mechanism.
+The mechanism uses a named notification channel. You will have to provide the name 
+of the channel as a configuration parameter `BLOCKS_CHANNEL`.
+### Notification trigger
+You will have to add a custom notification trigger to the Postgres DB:
+```sql
+CREATE OR REPLACE FUNCTION notify_new_block()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Send a NOTIFY with the index of the new block
+    PERFORM pg_notify('new_block', NEW.number::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_notify_new_block
+AFTER INSERT ON block
+FOR EACH ROW
+EXECUTE FUNCTION notify_new_block();
+```
+This will create a trigger for the channel named `new_block` on the table named `block`,
+sending the `number` field as text to the Proxy.
+
+
+### Debugging the LISTEN/NOTIFY connection
+A useful Postgres snippet for debugging the connection is:
+```sql
+SELECT
+    a.pid,
+    a.usename AS user,
+    a.application_name,
+    a.client_addr AS client_address,
+    a.client_port,
+    array_agg(l.channel) AS channels
+FROM
+    pg_stat_activity a
+LEFT JOIN LATERAL
+    (SELECT pg_listening_channels() AS channel) l
+    ON true
+WHERE
+    l.channel IS NOT NULL
+GROUP BY
+    a.pid, a.usename, a.application_name, a.client_addr, a.client_port;
+```
+It will show all the connected users and channels they listen to, something like
+```ascii
+  pid   |     user     | application_name | client_address | client_port |  channels   
+--------+--------------+------------------+----------------+-------------+-------------
+ 170300 | slasher_user |                  | 127.0.0.1      |       49856 | {new_block}
+
+```
+
+  
 
 ## Prerequisites
 ### Development
@@ -52,13 +117,10 @@ Python service template for reuse.
   - [pipx](https://pipx.pypa.io/stable/)
   - [poetry](https://python-poetry.org/docs/)
   - [docker](https://docs.docker.com/get-docker/)
-  - [Helm](https://helm.sh/en/docs/)
-  - [minikube](https://minikube.sigs.k8s.io/docs/start/)
   - [Act](#act)
 
 ### Deployment
   - [Github Actions](#github-actions) - repository use Github Actions to automate the build, test, release and deployment processes. For your convinience we recommend to fill necessary secrets in the repository settings.
-
 
 
 ## Development
@@ -129,12 +191,18 @@ poetry run pre-commit install
 
 4. Launch the project:
 ```bash
-poetry run uvicorn app.main:app 
+poetry run uvicorn slasher_proxy.main:app 
 ```
 or do it in two steps:
 ```bash
 poetry shell
-uvicorn app.main:app
+uvicorn slasher_proxy.main:app
+```
+
+alternatively, use the direct CLI call form:
+```bash
+poetry shell
+env PYTHONPATH=./ python slasher_proxy/main.py avalanche
 ```
 
 5. Running tests:
@@ -162,64 +230,7 @@ docker push <image_name>:<image_tag>
 ```
 
 
-## Manual build and deployment on minikube
-1. Install [minikube](https://minikube.sigs.k8s.io/docs/start/).
-2. Start minikube:
-```bash
-minikube start
-```
-3. Build a docker image:
-```bash
-docker build . -t <image_name>:<image_tag>
-```
-4. Upload the docker image to minikube:
-```bash
-minikube image load <image_name>:<image_tag>
-```
-5. Deploy the service:
-```bash
-helm upgrade --install <app_name> ./charts/app --set image.repository=<image_name> --set image.tag=latest --version 0.1.0
-```
 
-## Package
-To generate and publish a package on pypi.org, execute the following commands:
-```bash
-poetry config pypi-token.pypi <pypi_token>
-poetry build
-poetry publish
-```
-
-pypi_token - API token for authentication on [PyPI](https://pypi.org/help/#apitoken). 
-
-
-## Helm chart
-Authenticate your Helm client in the container registry:
-```bash
-helm registry login <container_registry> -u <username>
-```
-
-Create a [Helm chart](https://helm.sh/docs/):
-```bash
-helm package charts/<chart_name>
-```
-
-Push the Helm chart to container registry:
-```bash
-helm push <helm_chart_package> <container_registry>
-```
-
-Deploy the Helm chart:
-```bash
-helm repo add <repo_name> <repo_url>
-helm repo update <repo_name>
-helm upgrade --install <release_name> <repo_name>/<chart_name>
-```
-
-## OpenaAPI schema
-To manually generate the OpenAPI schema, execute the command:
-```bash
-poetry run python ./tools/extract_openapi.py app.main:app --app-dir . --out openapi.yaml --app_version <version>
-```
 
 ## Release
 To create a release, add a tag in GIT with the format a.a.a, where 'a' is an integer.
@@ -229,48 +240,17 @@ git push origin 0.1.0
 ```
 The release version for branches, pull requests, and other tags will be generated based on the last tag of the form a.a.a.
 
-## Helm Chart Versioning
-The Helm chart version changed automatically when a new release is created. The version of the Helm chart is equal to the version of the release.
-
 ## GitHub Actions
 [GitHub Actions](https://docs.github.com/en/actions) triggers testing, builds, and application publishing for each release.  
 
-
-**Initial setup**  
-1. Create the branch [gh-pages](https://pages.github.com/) and use it as a GitHub page.  
-2. Set up variables at `https://github.com/<workspace>/<project>/settings/variables/actions`:
-- `DOCKER_IMAGE_NAME` - The name of the Docker image for uploading to the repository.
-3. Set up secrets at `https://github.com/<workspace>/<project>/settings/secrets/actions`:
-- `AWS_ACCESS_KEY_ID` - [AWS Access Key ID.](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).
-- `AWS_SECRET_ACCESS_KEY` - AWS Secret Access Key
-- `AWS_REGION` - [AWS region.](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/).
-- `EKS_CLUSTER_ROLE_ARN` - The IAM role's ARN in AWS, providing permissions for managing an Amazon EKS Kubernetes cluster.
-- `EKS_CLUSTER_NAME` - Amazon EKS Kubernetes cluster name.
-- `EKS_CLUSTER_NAMESPACE` - Amazon EKS Kubernetes cluster namespace.
-- `HELM_REPO_URL` - `https://<workspace>.github.io/<project>/helm-charts/`
-
-
-You can set up automatic testing in GitHub Actions for different versions of Python. To do this, specify the versions set in the `.github/workflows/test_and_build.yaml` file. For example:
-```yaml
-strategy:
-  matrix:
-    python-version: ["3.10", "3.11", "3.12"]
-```
-
-The process of building and publishing differs for web services and libraries.
-
 ### Web service
 The default build and publish process is configured for a web application (`.github\workflows\build_web.yaml`).
-During this process, a Docker image is built, a Helm chart is created, an `openapi.yaml` is generated, and the web service is deployed to a Kubernetes cluster.
 
 **After execution**  
-The OpenAPI schema will be available at `https://github.com/<workspace>/<project>/releases/`.  
-The index.yaml file containing the list of Helm charts will be available at `https://<workspace>.github.io/<project>/helm-charts/index.yaml`. You can also publish your Helm charts to [Artifact Hub.](https://artifacthub.io/)  
 The Docker image will be available at `https://github.com/orgs/<workspace>/packages?repo_name=<project>`.
 
 **Initial setup**  
 Set up a [secret token](https://pypi.org/help/#apitoken) for PyPI at `https://github.com/<workspace>/<project>/settings/secrets/actions`.
-
 
 **After execution**  
 A package will be available at `https://github.com/<workspace>/<project>/releases/` and pypi.org. 
