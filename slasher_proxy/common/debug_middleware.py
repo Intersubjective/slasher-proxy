@@ -1,10 +1,14 @@
+from typing import Awaitable, Callable
+
 import traceback
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 
-async def debug_exception_middleware(request: Request, call_next):
+async def debug_exception_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     try:
         return await call_next(request)
     except Exception as exc:

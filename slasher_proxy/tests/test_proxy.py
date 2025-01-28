@@ -1,7 +1,8 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import PostgresDsn
 
 from slasher_proxy.asgi import create_slasher_app
 from slasher_proxy.common import T_STATUS_SUBMITTED
@@ -17,7 +18,7 @@ def client(mock_settings):
 @pytest.fixture
 def mock_settings():
     return SlasherRpcProxySettings(
-        dsn="postgresql://user:password@localhost:5432/testdb",
+        dsn=PostgresDsn("postgresql://user:password@localhost:5432/testdb"),
         rpc_url="http://mock-avalanche-rpc.localhost:12345",
         log_level="INFO",
         port=5500,
@@ -49,18 +50,11 @@ def test_handle_send_raw_transaction_returns_avalanche_response(mock_settings, c
                     if response.status_code == 500:
                         print("Error details:", response.json())
 
-                    assert (
-                        response.status_code == 200
-                    ), f"Unexpected status code: {response.status_code}. Response: {response.json()}"
+                    assert response.status_code == 200, (
+                        f"Unexpected status code: {response.status_code}. "
+                        + f"Response: {response.json()}"
+                    )
                     assert response.json() == {"result": "0xabcdef1234567890"}
-
-
-# Remove the duplicate mock_settings fixture
-# @pytest.fixture
-# def mock_settings():
-#     return SlasherRpcProxySettings(
-#         rpc_url="http://mock-avalanche-rpc.localhost:12345",
-#     )
 
 
 def test_handle_send_raw_transaction_saves_to_db(mock_settings, client):

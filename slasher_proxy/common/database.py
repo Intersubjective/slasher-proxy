@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import PostgresDsn
 
 from slasher_proxy.common import db
@@ -8,10 +10,10 @@ from slasher_proxy.common.upgrade import check_db_version
 class GetOrInsertMixin:
     @classmethod
     def get_or_insert(cls, **kwargs):
-        return cls.get(**kwargs) or cls(**kwargs)
+        return cls.get(**kwargs) or cls(**kwargs)  # type: ignore[attr-defined]
 
 
-def start_db(dsn: PostgresDsn, network_name=None):
+def start_db(dsn: PostgresDsn, network_name: Optional[str] = None) -> None:
     db.bind(provider="postgres", dsn=str(dsn))
     db.generate_mapping(create_tables=True)
     check_db_version(network_name)

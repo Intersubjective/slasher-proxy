@@ -2,6 +2,7 @@ import click
 import uvicorn
 
 from slasher_proxy.asgi import create_slasher_app
+from slasher_proxy.common import db
 from slasher_proxy.common.log import LOGGER
 from slasher_proxy.common.settings import get_settings
 

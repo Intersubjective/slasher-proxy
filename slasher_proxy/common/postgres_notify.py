@@ -1,11 +1,13 @@
+from typing import Any, Callable, Coroutine
+
 import asyncpg_listen
 
 from slasher_proxy.common.log import LOGGER
 
 
-def create_notification_listener(
-    postgres_url: str, channel_name: str, callback: callable
-):
+async def create_notification_listener(
+    postgres_url: str, channel_name: str, callback: Callable[[str | None], Any]
+) -> Coroutine[Any, Any, None]:
     listener = asyncpg_listen.NotificationListener(
         asyncpg_listen.connect_func(dsn=postgres_url)
     )

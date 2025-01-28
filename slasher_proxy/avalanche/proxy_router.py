@@ -4,6 +4,7 @@ import json
 
 import aiohttp
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pony.orm import db_session
 
 from slasher_proxy.common import T_STATUS_ERROR, T_STATUS_SUBMITTED
@@ -16,8 +17,8 @@ router = APIRouter()
 @router.post("/eth_sendRawTransaction")
 async def handle_send_raw_transaction(
     request: Request,
-    settings: Annotated[SlasherRpcProxySettings, Request] = Depends(get_settings),
-):
+    settings: Annotated[SlasherRpcProxySettings, Depends(get_settings)],
+) -> JSONResponse:
     body = await request.json()
 
     # Validate input
@@ -50,7 +51,7 @@ async def handle_send_raw_transaction(
             )
 
         # Return the response from Avalanche
-        return response_data
+        return JSONResponse(content=response_data)
 
     except Exception as e:
         raise HTTPException(
