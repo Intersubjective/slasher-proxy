@@ -26,11 +26,6 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/amd64, linux/arm64
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -62,15 +57,11 @@ jobs:
           push: true
           tags: ${{ env.DOCKER_IMAGES }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64, linux/arm64
 
       - name: Install dependencies
         run: |
           poetry config virtualenvs.in-project true
           poetry install --no-root --with dev
-
-      - name: Generate openapi.yaml
-        run: poetry run python ./tools/extract_openapi.py app.main:app --app-dir . --out ./openapi.yaml --app_version "${{ env.APP_VERSION }}"
 
       - name: Configure Git
         run: |
@@ -81,9 +72,3 @@ jobs:
         run: gh release create "${{ env.APP_VERSION }}" ./openapi.yaml
         env:
           GH_TOKEN: ${{ github.token }}
-
-      - name: Publish Helm charts
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ github.token }}
-          target_dir: "./helm-charts/"
