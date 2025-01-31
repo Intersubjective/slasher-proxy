@@ -4,7 +4,7 @@ import logging
 from functools import lru_cache
 
 from pydantic import Field, PostgresDsn
-from pydantic_settings import SettingsConfigDict, BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 VALID_LOG_LEVELS = {
     logging.getLevelName(level)
@@ -41,6 +41,7 @@ class SlasherRpcProxySettings(BaseSettings):
         if v not in VALID_LOG_LEVELS:
             raise ValueError(f"Invalid log level: {v}")
         return v
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
@@ -51,7 +52,9 @@ settings_instance: Optional[SlasherRpcProxySettings] = None
 def get_settings(env_file: Optional[str] = None) -> SlasherRpcProxySettings:
     global settings_instance
     if env_file:
-        settings_instance = SlasherRpcProxySettings(_env_file=env_file) # type: ignore[call-arg]
+        settings_instance = SlasherRpcProxySettings(
+            _env_file=env_file
+        )  # type: ignore[call-arg]
     else:
         # If env_file is not provided, load the settings from the environment
         if settings_instance is None:
