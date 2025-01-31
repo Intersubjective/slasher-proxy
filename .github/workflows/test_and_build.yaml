@@ -51,5 +51,4 @@ jobs:
       contents: write
       packages: write
     secrets: inherit
-    # Replace build_web.yaml to build_lib.yaml for lib workflow
     uses: ./.github/workflows/build_web.yaml
