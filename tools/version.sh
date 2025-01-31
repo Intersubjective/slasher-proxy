@@ -28,7 +28,7 @@ make_version() {
         git fetch --prune --unshallow || true
     else
         BRANCH=$(git rev-parse --abbrev-ref HEAD)
-        TAG=$(git describe --exact-match --tags $GIT_SHA 2> /dev/null || echo "")
+        TAG=$(git describe --exact-match --tags "$GIT_SHA" 2> /dev/null || echo "")
     fi
 
     LAST_RELEASE=$(get_last_release "$GIT_SHA")
