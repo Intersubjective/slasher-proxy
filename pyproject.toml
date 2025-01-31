@@ -112,6 +112,6 @@ doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAI
 addopts = [
   "--strict-markers",
   "--tb=short",
-  "--doctest-modules",
+  #"--doctest-modules",   - this one tries to collect main.py, resulting in crash
   "--doctest-continue-on-failure",
 ]

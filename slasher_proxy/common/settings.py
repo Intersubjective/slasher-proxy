@@ -50,14 +50,12 @@ settings_instance: Optional[SlasherRpcProxySettings] = None
 @lru_cache()
 def get_settings(env_file: Optional[str] = None) -> SlasherRpcProxySettings:
     global settings_instance
-    if settings_instance is None or env_file:
-        # load_dotenv(env_file) - this one is redundant but maybe useful in future
-        settings_instance = (
-            # If env_file is not provided, load the settings from the environment
-            SlasherRpcProxySettings()  # type: ignore[call-arg]
-            if env_file is None
-            else SlasherRpcProxySettings(_env_file=env_file)  # type: ignore[call-arg]
-        )
+    if env_file:
+        settings_instance = SlasherRpcProxySettings(_env_file=env_file) # type: ignore[call-arg]
+    else:
+        # If env_file is not provided, load the settings from the environment
+        if settings_instance is None:
+            settings_instance = SlasherRpcProxySettings()  # type: ignore[call-arg]
     return settings_instance
 
 
