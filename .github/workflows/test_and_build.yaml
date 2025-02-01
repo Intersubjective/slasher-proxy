@@ -20,15 +20,18 @@ on:
         default: false
 
 jobs:
-  run_tests_before_build:
+  run_tests:
     uses: ./.github/workflows/test.yaml
 
-  build_after_tests:
-    needs: [run_tests_before_build]
+  build:
+    needs: [run_tests]
     permissions:
       contents: write
       packages: write
     secrets: inherit
-    uses: ./.github/workflows/build_web.yaml
-    with:
-      push: ${{ github.event_name == 'workflow_dispatch' && inputs.push }}
+    uses: ./.github/workflows/build.yaml
+
+  push:
+    needs: [build]
+    secrets: inherit
+    uses: ./.github/workflows/push_to_registry.yaml
