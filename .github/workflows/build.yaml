@@ -32,21 +32,21 @@ jobs:
         run: |
           VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = //;s/"//g')
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "DOCKER_IMAGES=${{ secrets.REGISTRY_USERNAME }}/${{ vars.DOCKER_IMAGE_NAME }}:$VERSION" >> $GITHUB_ENV
-          echo "DOCKER_TAGS=$VERSION" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE=${{ secrets.REGISTRY_USERNAME }}/${{ vars.DOCKER_IMAGE_NAME }}" >> $GITHUB_ENV
+          echo "DOCKER_TAG=$VERSION" >> $GITHUB_ENV
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.REGISTRY_USERNAME }}/${{ vars.DOCKER_IMAGE_NAME }}
-          tags: ${{ env.DOCKER_TAGS }}
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: ${{ env.DOCKER_TAG }}
 
       - name: Build docker image
         uses: docker/build-push-action@v5
         with:
           push: false
-          tags: ${{ env.DOCKER_IMAGES }}
+          tags: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=docker,dest=/tmp/image.tar
 
