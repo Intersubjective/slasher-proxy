@@ -32,7 +32,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_IMAGE }}
+          images: ${{ secrets.REGISTRY_USERNAME }}/${{ vars.DOCKER_IMAGE_NAME }}
 
       - name: Build docker image
         uses: docker/build-push-action@v5
