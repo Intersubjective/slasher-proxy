@@ -14,7 +14,6 @@ jobs:
     uses: ./.github/workflows/test.yaml
 
   build:
-    needs: [run_tests]
     permissions:
       contents: write
       packages: write
@@ -22,6 +21,6 @@ jobs:
     uses: ./.github/workflows/build.yaml
 
   push:
-    needs: [build]
+    needs: [run_tests, build]
     secrets: inherit
     uses: ./.github/workflows/push_to_registry.yaml

@@ -18,13 +18,17 @@ jobs:
           docker load --input /tmp/image.tar
           docker image ls -a
 
-      - name: Log into registry ${{ env.REGISTRY }}
+      - name: Log into registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ vars.REGISTRY }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_TOKEN }}
 
       - name: Push image
         run: |
-          docker push ${{ env.DOCKER_IMAGES }}
+          REGISTRY="${{ vars.REGISTRY }}"
+          IMAGE_NAME="${{ vars.DOCKER_IMAGE_NAME }}"
+          FULL_IMAGE_NAME="${REGISTRY}/${IMAGE_NAME}"
+          echo "Pushing image: $FULL_IMAGE_NAME"
+          docker push --all-tags $FULL_IMAGE_NAME

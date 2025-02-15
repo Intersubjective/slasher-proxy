@@ -2,13 +2,22 @@ FROM python:3.12-slim
 
 WORKDIR /code
 
-COPY poetry.lock pyproject.toml ./
+ENV POETRY_HOME="/opt/poetry" \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_NO_INTERACTION=1
 
-RUN pip install --no-cache-dir poetry \
-    && poetry config virtualenvs.create false \
-    && poetry install --no-root --without dev,test \
+# Install Poetry
+RUN pip install --no-cache-dir poetry
+
+# Copy project files
+COPY pyproject.toml poetry.lock ./
+
+# Install dependencies
+RUN poetry install --no-root --without dev,test \
     && rm -rf $(poetry config cache-dir)/{cache,artifacts}
 
+# Copy application code
 COPY slasher_proxy /code/app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+# Run the application
+CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
