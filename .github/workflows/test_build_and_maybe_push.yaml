@@ -1,16 +1,6 @@
 name: Test, build, push
 
 on:
-  push:
-    branches:
-      - '**'
-    tags:
-      - '**'
-    paths-ignore:
-      - 'releases/**'
-  pull_request:
-    branches:
-      - '**'
   workflow_dispatch:
     inputs:
       push:
