@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .avalanche import proxy_router
-from .avalanche.blockchecker import check_block
+from .avalanche.block_checker import check_block
 from .common.database import start_db
 from .common.debug_middleware import debug_exception_middleware
 from .common.log import LOGGER
