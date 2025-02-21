@@ -9,14 +9,24 @@ from slasher_proxy.common.model import (
     Commitment,
     NodeStats,
     Transaction,
+    db,
     init_db,
 )
 
 
-# Initialize the database once per test session.
+# Initialize the in-memory database and create all tables once per test session.
 @pytest.fixture(scope="session", autouse=True)
 def initialize_database():
-    init_db()
+    # Use shared in-memory DB so all threads and the app see the same instance.
+    init_db(
+        provider="sqlite",
+        filename=":memory:?cache=shared",
+        create_db=True,
+        create_tables=True,
+    )
+    yield
+    # Drop tables at the end of the session, outside any db_session.
+    db.drop_all_tables(with_all_data=True)
 
 
 # Clear the database between tests in the proper order.

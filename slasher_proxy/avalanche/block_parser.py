@@ -1,3 +1,5 @@
+from typing import Any, Dict, Optional
+
 import json
 
 import requests
@@ -6,14 +8,14 @@ from pony.orm import commit, db_session
 from slasher_proxy.common.model import Block, BlockTransaction, Transaction
 
 
-def get_cchain_block_by_number(number):
+def get_cchain_block_by_number(number: int) -> Dict[str, Any]:
     """
     Retrieve a C-Chain block by its number.
     The block number is passed as an integer which we convert to hex.
     """
-    url = "https://api.avax.network/ext/bc/C/rpc"
-    headers = {"Content-Type": "application/json"}
-    payload = {
+    url: str = "https://api.avax.network/ext/bc/C/rpc"
+    headers: Dict[str, str] = {"Content-Type": "application/json"}
+    payload: Dict[str, Any] = {
         "jsonrpc": "2.0",
         "id": 1,
         "method": "eth_getBlockByNumber",
@@ -24,10 +26,10 @@ def get_cchain_block_by_number(number):
     return response.json()
 
 
-def get_platform_block_by_height(height):
-    url = "https://api.avax.network/ext/bc/P"
-    headers = {"Content-Type": "application/json"}
-    payload = {
+def get_platform_block_by_height(height: int) -> Dict[str, Any]:
+    url: str = "https://api.avax.network/ext/bc/P"
+    headers: Dict[str, str] = {"Content-Type": "application/json"}
+    payload: Dict[str, Any] = {
         "jsonrpc": "2.0",
         "id": 1,
         "method": "platform.getBlockByHeight",
@@ -38,62 +40,61 @@ def get_platform_block_by_height(height):
     return response.json()
 
 
-def parse_and_save_block(json_result):
+def parse_and_save_block(json_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Parse the JSON result from a C-Chain RPC call and save/update a Block,
     create Transaction records for each transaction and link them via BlockTransaction.
     """
-    # For C-Chain, the block data is in result directly.
-    block = json_result.get("result")
+    # For C-Chain, the block data is in 'result' directly.
+    block: Optional[Dict[str, Any]] = json_result.get("result")
     if not block:
         return None
 
     with db_session:
         # Parse block-level fields.
-        height = int(block.get("number"), 16) if block.get("number") else 0
-        timestamp = int(block.get("timestamp"), 16) if block.get("timestamp") else 0
+        height: int = int(block.get("number"), 16) if block.get("number") else 0
+        timestamp: int = (
+            int(block.get("timestamp"), 16) if block.get("timestamp") else 0
+        )
 
         # Convert the block hash from hex string to bytes.
-        block_hash_str = block.get("hash", "")
-        block_hash = (
+        block_hash_str: str = block.get("hash", "")
+        block_hash: bytes = (
             bytes.fromhex(block_hash_str[2:])
             if block_hash_str.startswith("0x")
             else block_hash_str.encode()
         )
 
         # For C-Chain, use the 'miner' field as the node identifier.
-        node_id = block.get("miner", "unknown")
+        node_id: str = block.get("miner", "unknown")
 
         # Create or update the Block record.
         db_block = Block.get(number=height)
-
         if not db_block:
-            db_block = Block(
-                number=height, hash=block_hash, node_id=node_id,
-            )
+            db_block = Block(number=height, hash=block_hash, node_id=node_id)
         else:
             db_block.hash = block_hash
             db_block.node_id = node_id
 
         # Process transactions.
-        txs = block.get("transactions", [])
+        txs: list = block.get("transactions", [])
         for order, tx in enumerate(txs, start=1):
-            tx_hash_str = tx.get("hash")
+            tx_hash_str: Optional[str] = tx.get("hash")
             if not tx_hash_str:
                 continue
-            tx_hash = (
+            tx_hash: bytes = (
                 bytes.fromhex(tx_hash_str[2:])
                 if tx_hash_str.startswith("0x")
                 else tx_hash_str.encode()
             )
             # Serialize the transaction as a canonical JSON string.
-            raw_tx = json.dumps(tx, sort_keys=True)
+            raw_tx: str = json.dumps(tx, sort_keys=True)
             # Create or get the Transaction record.
             tx_obj = Transaction.get(hash=tx_hash)
             if not tx_obj:
-                from_addr = tx.get("from", "unknown")
-                nonce_str = tx.get("nonce", "0x0")
-                nonce = int(nonce_str, 16) if isinstance(nonce_str, str) else 0
+                from_addr: str = tx.get("from", "unknown")
+                nonce_str: str = tx.get("nonce", "0x0")
+                nonce: int = int(nonce_str, 16) if isinstance(nonce_str, str) else 0
                 tx_obj = Transaction(
                     hash=tx_hash,
                     from_address=from_addr,
@@ -111,4 +112,3 @@ def parse_and_save_block(json_result):
         "hash": block_hash_str,
         "transaction_count": len(txs),
     }
-
