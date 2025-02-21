@@ -9,7 +9,7 @@ from pony.orm import PrimaryKey, Required, Set, composite_index, composite_key
 
 from slasher_proxy.common import C_STATUS_PENDING, T_STATUS_SUBMITTED
 
-db: Database = Database()  # type: Database
+db = Database()
 
 
 class Transaction(db.Entity):
