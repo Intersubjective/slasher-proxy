@@ -1,3 +1,4 @@
+from typing import Generator
 import pytest
 from pony.orm import commit, db_session
 
@@ -16,7 +17,7 @@ from slasher_proxy.common.model import (
 
 # Initialize the in-memory database and create all tables once per test session.
 @pytest.fixture(scope="session", autouse=True)
-def initialize_database():
+def initialize_database() -> None: # type: ignore
     # Use shared in-memory DB so all threads and the app see the same instance.
     init_db(
         provider="sqlite",
@@ -31,7 +32,7 @@ def initialize_database():
 
 # Clear the database between tests in the proper order.
 @pytest.fixture(autouse=True)
-def clear_database():
+def clear_database() -> Generator[None, None, None]:
     # Before each test, remove all data.
     with db_session:
         # Delete child/association tables first.

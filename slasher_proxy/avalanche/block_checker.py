@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @db_session
-def check_block(block_number: int):
+def check_block(block_number: int) -> None:
     """
     Check the block and update the commitment status.
     """
@@ -61,7 +61,11 @@ def check_block(block_number: int):
             if tx_obj.replaces:
                 replaced_tx_hash = tx_obj.replaces
                 replaced_comm = Commitment.get(node=node_id, tx_hash=replaced_tx_hash)
-                if replaced_comm and replaced_comm.status == C_STATUS_PENDING or replaced_comm.status == C_STATUS_OMITTED:
+                if (
+                    replaced_comm
+                    and replaced_comm.status == C_STATUS_PENDING
+                    or replaced_comm.status == C_STATUS_OMITTED
+                ):
                     replaced_comm.status = C_STATUS_REVOKED
         if comm:
             if comm.status == C_STATUS_OMITTED:
@@ -79,7 +83,7 @@ def check_block(block_number: int):
             Commitment(
                 node=node_id,
                 tx_hash=tx_hash,
-                index=current_order+1,
+                index=current_order + 1,
                 status=C_STATUS_UNEXPECTED,
             )
             current_order += 1
@@ -91,9 +95,9 @@ def check_block(block_number: int):
 
     commitments = Commitment.select(
         lambda c: c.status == C_STATUS_PENDING
-                  and c.node == node_id
-                  and c.index >= start_range 
-                  and c.index < end_range
+        and c.node == node_id
+        and c.index >= start_range
+        and c.index < end_range
     ).order_by(Commitment.index)[:total_new_txs]
     for c in commitments:
         c.status = C_STATUS_OMITTED

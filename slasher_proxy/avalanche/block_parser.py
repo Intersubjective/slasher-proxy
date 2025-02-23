@@ -1,6 +1,4 @@
-from typing import Any, Dict, Optional
-
-import json
+from typing import Any, Dict, cast
 
 import requests
 from pony.orm import commit, db_session
@@ -23,7 +21,8 @@ def get_cchain_block_by_number(number: int) -> Dict[str, Any]:
     }
     response = requests.post(url, json=payload, headers=headers)
     response.raise_for_status()
-    return response.json()
+    response_json = response.json()
+    return cast(Dict[str, Any], response_json)
 
 
 def get_platform_block_by_height(height: int) -> Dict[str, Any]:
@@ -37,78 +36,66 @@ def get_platform_block_by_height(height: int) -> Dict[str, Any]:
     }
     response = requests.post(url, json=payload, headers=headers)
     response.raise_for_status()
-    return response.json()
+    response_json = response.json()
+    return cast(Dict[str, Any], response_json)
 
 
-def parse_and_save_block(json_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """
-    Parse the JSON result from a C-Chain RPC call and save/update a Block,
-    create Transaction records for each transaction and link them via BlockTransaction.
-    """
-    # For C-Chain, the block data is in 'result' directly.
-    block: Optional[Dict[str, Any]] = json_result.get("result")
-    if not block:
-        return None
+def parse_and_save_block(json_data: Dict[str, Any], node_id: str) -> Dict[str, Any]:
+    # Extract block data from the top-level "result" key
+    result_data = json_data.get("result")
+    if not isinstance(result_data, dict):
+        raise ValueError("Invalid block JSON. Missing 'result' dict.")
 
+    # Pull hex strings, convert to bytes or int
+    block_hash_str = result_data.get("hash")
+    height_str = result_data.get("number")
+    if not isinstance(block_hash_str, str):
+        raise ValueError("Block hash is required.")
+    if not isinstance(height_str, str):
+        raise ValueError("Block number is required.")
+
+    if block_hash_str.startswith("0x"):
+        block_hash = bytes.fromhex(block_hash_str[2:])
+    else:
+        block_hash = block_hash_str.encode()
+
+    height = int(height_str, 16)
+    txs = result_data.get("transactions", [])
+    if not isinstance(txs, list):
+        raise ValueError("Transactions should be a list.")
+
+    # Save to DB
     with db_session:
-        # Parse block-level fields.
-        height: int = int(block.get("number"), 16) if block.get("number") else 0
-        timestamp: int = (
-            int(block.get("timestamp"), 16) if block.get("timestamp") else 0
-        )
+        block = Block.get(hash=block_hash)
+        if not block:
+            # Adjust to match your schema: if hash or node_id is required, supply them
+            block = Block(hash=block_hash, number=height, node_id=node_id)
 
-        # Convert the block hash from hex string to bytes.
-        block_hash_str: str = block.get("hash", "")
-        block_hash: bytes = (
-            bytes.fromhex(block_hash_str[2:])
-            if block_hash_str.startswith("0x")
-            else block_hash_str.encode()
-        )
-
-        # For C-Chain, use the 'miner' field as the node identifier.
-        node_id: str = block.get("miner", "unknown")
-
-        # Create or update the Block record.
-        db_block = Block.get(number=height)
-        if not db_block:
-            db_block = Block(number=height, hash=block_hash, node_id=node_id)
-        else:
-            db_block.hash = block_hash
-            db_block.node_id = node_id
-
-        # Process transactions.
-        txs: list = block.get("transactions", [])
-        for order, tx in enumerate(txs, start=1):
-            tx_hash_str: Optional[str] = tx.get("hash")
-            if not tx_hash_str:
+        for i, tx_info in enumerate(txs):
+            tx_hash_str = tx_info.get("hash")
+            if not isinstance(tx_hash_str, str):
                 continue
-            tx_hash: bytes = (
-                bytes.fromhex(tx_hash_str[2:])
-                if tx_hash_str.startswith("0x")
-                else tx_hash_str.encode()
-            )
-            # Serialize the transaction as a canonical JSON string.
-            raw_tx: str = json.dumps(tx, sort_keys=True)
-            # Create or get the Transaction record.
-            tx_obj = Transaction.get(hash=tx_hash)
-            if not tx_obj:
-                from_addr: str = tx.get("from", "unknown")
-                nonce_str: str = tx.get("nonce", "0x0")
-                nonce: int = int(nonce_str, 16) if isinstance(nonce_str, str) else 0
-                tx_obj = Transaction(
+
+            if tx_hash_str.startswith("0x"):
+                tx_hash = bytes.fromhex(tx_hash_str[2:])
+            else:
+                tx_hash = tx_hash_str.encode()
+
+            txn = Transaction.get(hash=tx_hash)
+            if not txn:
+                txn = Transaction(
                     hash=tx_hash,
-                    from_address=from_addr,
-                    nonce=nonce,
+                    from_address=str(tx_info.get("from") or ""),
+                    nonce=int(tx_info.get("nonce") or "0", 16),
                 )
-            # Create a linking record if it doesn't exist.
-            if not BlockTransaction.get(block=db_block, transaction=tx_obj):
-                BlockTransaction(block=db_block, transaction=tx_obj, order=order)
-        commit()
+
+            # If BlockTransaction.order is required, supply it:
+            # Option 1: Use enumeration
+            BlockTransaction(block=block, transaction=txn, order=i)
+            # Alternatively, if transactionIndex is present as hex, convert that:
+            # order = int(tx_info["transactionIndex"], 16)
 
     return {
         "height": height,
-        "timestamp": timestamp,
-        "node_id": node_id,
-        "hash": block_hash_str,
         "transaction_count": len(txs),
     }

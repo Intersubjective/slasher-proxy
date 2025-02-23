@@ -1,22 +1,26 @@
-from typing import Any, Dict
+from types import TracebackType
+from typing import Any, Dict, Optional, Type
 
 import aiohttp
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from pony.orm import db_session
 
 from slasher_proxy.avalanche.proxy_router import router
-from slasher_proxy.common.model import Commitment, NodeStats, Transaction
 from slasher_proxy.common.settings import SlasherRpcProxySettings, get_settings
 
 
 # Dummy settings for testing.
 class DummySettings(SlasherRpcProxySettings):
-    # Must match what you used in conftest.
-    dsn: str = "sqlite:///:memory:?cache=shared"
+    # Use ignore if you want an in-memory SQLite string
+    dsn: str = "sqlite:///:memory:?cache=shared"  # type: ignore[assignment]
+    # Or define a union type:
+    # dsn: str | PostgresDsn = "sqlite:///:memory:?cache=shared"
+
     rpc_url: str = "http://dummy-validator"
     node_id: str = "avalanche"
+    blocks_channel: Optional[str] = None
+    network_name: str = "avalanche"
 
 
 # Create the FastAPI app and include the router.
@@ -37,13 +41,21 @@ class DummyResponse:
     async def __aenter__(self) -> "DummyResponse":
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
+    ) -> None:
         pass
 
 
 class DummyClientSession:
     def __init__(
-        self, json_data: Dict[str, Any] = None, *, raise_exception: bool = False
+        self,
+        json_data: Optional[Dict[str, Any]] = None,
+        *,
+        raise_exception: bool = False
     ) -> None:
         self._json_data = json_data or {}
         self.raise_exception = raise_exception
@@ -51,7 +63,12 @@ class DummyClientSession:
     async def __aenter__(self) -> "DummyClientSession":
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[Any],
+    ) -> None:
         pass
 
     # Changed from async def to def so that it returns a DummyResponse immediately.
@@ -63,10 +80,10 @@ class DummyClientSession:
 
 # Patch aiohttp.ClientSession using monkeypatch.
 @pytest.fixture
-def override_aiohttp(monkeypatch):
-    def dummy_session_factory(*args, **kwargs):
+def override_aiohttp(monkeypatch: Any) -> None:
+    def dummy_session_factory(*args: Any, **kwargs: Any) -> DummyClientSession:
         # By default simulate validator returning a successful response.
-        dummy_json = {
+        dummy_json: Dict[str, Any] = {
             "result": {
                 "txHash": "0xabcdef",
                 "commitment": "0x123456",
@@ -78,7 +95,7 @@ def override_aiohttp(monkeypatch):
     monkeypatch.setattr(aiohttp, "ClientSession", dummy_session_factory)
 
 
-def test_invalid_method(override_aiohttp):
+def test_invalid_method(override_aiohttp: Any) -> None:
     client = TestClient(app)
 
     # Invalid method in the request.
@@ -88,7 +105,7 @@ def test_invalid_method(override_aiohttp):
     assert response.json()["detail"] == "Invalid method"
 
 
-def test_invalid_params(override_aiohttp):
+def test_invalid_params(override_aiohttp: Any) -> None:
     client = TestClient(app)
 
     # Missing params field.
@@ -107,10 +124,10 @@ def test_invalid_params(override_aiohttp):
     assert response3.status_code == 400
 
 
-def test_validator_error(monkeypatch):
+def test_validator_error(monkeypatch: Any) -> None:
     # Simulate a validator error response.
-    def dummy_session_factory(*args, **kwargs):
-        dummy_json = {"error": {"message": "Simulated validator error"}}
+    def dummy_session_factory(*args: Any, **kwargs: Any) -> DummyClientSession:
+        dummy_json: Dict[str, Any] = {"error": {"message": "Simulated validator error"}}
         return DummyClientSession(dummy_json)
 
     monkeypatch.setattr(aiohttp, "ClientSession", dummy_session_factory)
@@ -124,9 +141,9 @@ def test_validator_error(monkeypatch):
     assert "Transaction rejected" in detail
 
 
-def test_forwarding_exception(monkeypatch):
+def test_forwarding_exception(monkeypatch: Any) -> None:
     # Simulate an exception during forwarding.
-    def dummy_session_factory(*args, **kwargs):
+    def dummy_session_factory(*args: Any, **kwargs: Any) -> DummyClientSession:
         return DummyClientSession({}, raise_exception=True)
 
     monkeypatch.setattr(aiohttp, "ClientSession", dummy_session_factory)

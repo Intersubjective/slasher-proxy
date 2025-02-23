@@ -8,15 +8,16 @@ CURRENT_DB_VERSION = "20"
 NETWORK_NAME_KEY = "network"
 
 
-def upgrade_db(version):
+def upgrade_db(version: int) -> None:
     # TBD
     LOGGER.error("Upgrade not implemented, exiting.")
     exit(1)
 
 
-@db_session
-def check_db_version(network_name):
-    version = v.value if (v := AuxiliaryData.get(key=DB_VERSION_KEY)) else None
+@db_session 
+def check_db_version(network_name: str) -> None:
+    v = AuxiliaryData.get(key=DB_VERSION_KEY)
+    version = v.value if v else None
     if version is None:
         # New DB, add current version
         AuxiliaryData(key=DB_VERSION_KEY, value=CURRENT_DB_VERSION)

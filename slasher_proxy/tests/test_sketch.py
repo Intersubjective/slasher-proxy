@@ -10,7 +10,7 @@ def tx_hash(tx_data: bytes) -> bytes:
     return hashlib.sha256(tx_data).digest()
 
 
-def test_accumulator_initialization():
+def test_accumulator_initialization() -> None:
     """Test that the accumulator is initialized correctly."""
     acc = CountingBloomFilterAccumulator()
     assert len(acc.counters) == 64
@@ -19,7 +19,7 @@ def test_accumulator_initialization():
     assert acc.salt is not None
 
 
-def test_add_transaction():
+def test_add_transaction() -> None:
     """Test that adding a transaction increments the correct counters."""
     acc = CountingBloomFilterAccumulator(num_counters=16, num_hashes=2)
     tx1 = tx_hash(b"tx1")
@@ -28,7 +28,7 @@ def test_add_transaction():
     assert sum(acc.counters) > 0
 
 
-def test_delete_transaction():
+def test_delete_transaction() -> None:
     """Test that deleting a transaction decrements the correct counters."""
     acc = CountingBloomFilterAccumulator(num_counters=16, num_hashes=2)
     tx1 = tx_hash(b"tx1")
@@ -38,7 +38,7 @@ def test_delete_transaction():
     assert sum(acc.counters) == 0
 
 
-def test_to_bytes_and_from_bytes():
+def test_to_bytes_and_from_bytes() -> None:
     """Test that the accumulator can be serialized and deserialized correctly."""
     acc1 = CountingBloomFilterAccumulator(num_counters=32, num_hashes=3, counter_size=2)
     tx1 = tx_hash(b"tx1")
@@ -61,7 +61,7 @@ def test_to_bytes_and_from_bytes():
     assert acc1.salt == acc2.salt
 
 
-def test_large_number_of_transactions():
+def test_large_number_of_transactions() -> None:
     """Test that the accumulator can handle a large number of transactions without overflowing."""
     acc = CountingBloomFilterAccumulator(num_counters=64, num_hashes=1, counter_size=2)
     num_transactions = 100
@@ -72,7 +72,7 @@ def test_large_number_of_transactions():
     assert all(c < 65535 for c in acc.counters)
 
 
-def test_negative_counter_values():
+def test_negative_counter_values() -> None:
     """Test that the accumulator handles negative counter values correctly."""
     acc = CountingBloomFilterAccumulator(num_counters=16, num_hashes=1, counter_size=2)
     tx1 = tx_hash(b"tx1")
@@ -81,7 +81,7 @@ def test_negative_counter_values():
     assert any(c < 0 for c in acc.counters)
 
 
-def test_different_salt_values():
+def test_different_salt_values() -> None:
     """Test that different salt values result in different accumulator states."""
     acc1 = CountingBloomFilterAccumulator(num_counters=16, num_hashes=1, salt=b"salt1")
     acc2 = CountingBloomFilterAccumulator(num_counters=16, num_hashes=1, salt=b"salt2")
@@ -92,7 +92,7 @@ def test_different_salt_values():
     assert acc1.counters != acc2.counters
 
 
-def test_collision_resistance():
+def test_collision_resistance() -> None:
     """Test that the accumulator exhibits some collision resistance."""
     acc = CountingBloomFilterAccumulator(num_counters=16, num_hashes=1)
     tx1 = tx_hash(b"tx1")
@@ -103,7 +103,7 @@ def test_collision_resistance():
     assert len(set(acc.counters)) > 1
 
 
-def test_from_bytes_with_different_parameters():
+def test_from_bytes_with_different_parameters() -> None:
     """Test that from_bytes raises an exception if parameters don't match."""
     acc1 = CountingBloomFilterAccumulator(num_counters=32, num_hashes=1, counter_size=2)
     state_bytes = acc1.to_bytes()

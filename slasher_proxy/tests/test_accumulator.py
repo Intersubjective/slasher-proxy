@@ -18,7 +18,7 @@ def compute_expected_state(
     return state
 
 
-def test_initial_state():
+def test_initial_state() -> None:
     """Accumulator should return the initial state with no transactions."""
     init_state = b"\xAA" * 32
     acc = RollingHashAccumulator(initial_state=init_state, initial_count=10)
@@ -27,7 +27,7 @@ def test_initial_state():
     assert acc.to_bytes() == init_state
 
 
-def test_add_single_transaction():
+def test_add_single_transaction() -> None:
     """Adding one transaction updates the state and returns shifted index."""
     init_state = b"\x00" * 32
     tx = b"tx1"
@@ -40,7 +40,7 @@ def test_add_single_transaction():
     assert acc.to_bytes() == expected_state
 
 
-def test_sequential_transactions():
+def test_sequential_transactions() -> None:
     """Adding multiple transactions sequentially should yield expected state using shift."""
     init_state = b"\x00" * 32
     transactions = [b"tx1", b"tx2", b"tx3"]
@@ -53,7 +53,7 @@ def test_sequential_transactions():
     assert acc.to_bytes() == expected
 
 
-def test_repeated_transactions():
+def test_repeated_transactions() -> None:
     """Repeated (even identical) transactions yield unique state because of shifted indices."""
     init_state = b"\x00" * 32
     tx = b"duplicate_tx"

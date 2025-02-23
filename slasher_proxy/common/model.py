@@ -10,9 +10,10 @@ from pony.orm import PrimaryKey, Required, Set, composite_index, composite_key
 from slasher_proxy.common import C_STATUS_PENDING, T_STATUS_SUBMITTED
 
 db = Database()
+Entity = db.Entity  # Added alias for mypy
 
 
-class Transaction(db.Entity):
+class Transaction(Entity):  # type: ignore
     hash: bytes = PrimaryKey(bytes)
     status: int = Required(int, default=T_STATUS_SUBMITTED)
     created_at: datetime = Required(datetime, default=lambda: datetime.now())
@@ -24,7 +25,7 @@ class Transaction(db.Entity):
     )  # reverse relation
 
 
-class Commitment(db.Entity):
+class Commitment(Entity):  # type: ignore
     node: str = Required(str)
     tx_hash: bytes = Required(bytes)
     index: int = Required(int)
@@ -35,7 +36,7 @@ class Commitment(db.Entity):
     composite_index(node, index, tx_hash)
 
 
-class Block(db.Entity):
+class Block(Entity):  # type: ignore
     number: int = PrimaryKey(int)
     hash: bytes = Required(bytes, unique=True)
     node_id: str = Required(str)
@@ -43,7 +44,7 @@ class Block(db.Entity):
     block_transactions = Set("BlockTransaction", reverse="block")  # reverse relation
 
 
-class BlockTransaction(db.Entity):
+class BlockTransaction(Entity):  # type: ignore
     block = Required(Block, reverse="block_transactions")
     transaction = Required(
         Transaction, reverse="block_transactions"
@@ -52,19 +53,19 @@ class BlockTransaction(db.Entity):
     PrimaryKey(block, transaction)
 
 
-class BlockState(db.Entity):
+class BlockState(Entity):  # type: ignore
     block_number: int = PrimaryKey(int)
     accumulator_state: Optional[bytes] = PonyOptional(bytes)
     offset_index: int = Required(int, default=0)
     shift_index: int = Required(int, default=0)
 
 
-class AuxiliaryData(db.Entity):
+class AuxiliaryData(Entity):  # type: ignore
     key: str = PrimaryKey(str)
     value: Optional[str] = PonyOptional(str)
 
 
-class NodeStats(db.Entity):
+class NodeStats(Entity):  # type: ignore
     node: str = PrimaryKey(str)
     total_transactions: int = Required(int, default=0)
     reordered_count: int = Required(int, default=0)

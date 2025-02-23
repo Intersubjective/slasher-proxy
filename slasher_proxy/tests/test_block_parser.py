@@ -1,9 +1,10 @@
 from pony.orm import db_session
+from typing import Dict, Any
 
 from slasher_proxy.avalanche.block_parser import parse_and_save_block
 from slasher_proxy.common.model import Block, BlockTransaction, Transaction
 
-sample_block = {
+sample_block: Dict[str, Any] = {
     "baseFeePerGas": "0x5d21dba00",
     "blockExtraData": "0x",
     "blockGasCost": "0x0",
@@ -109,14 +110,21 @@ sample_block = {
 }
 
 
-def test_parse_and_save_block():
+def test_parse_and_save_block() -> None:
     # Wrap the sample block in a JSON result dict.
     json_result = {"result": sample_block}
-    saved = parse_and_save_block(json_result)
+
+    # Provide a node_id here.
+    saved = parse_and_save_block(json_result, node_id="test-node")
 
     # Assert the returned dictionary contains the correct information.
-    expected_height = int(sample_block["number"], 16)
-    expected_tx_count = len(sample_block["transactions"])
+    block_number_str = sample_block["number"]
+    assert isinstance(block_number_str, str)
+    expected_height = int(block_number_str, 16)
+
+    tx_list = sample_block["transactions"]
+    assert isinstance(tx_list, list)
+    expected_tx_count = len(tx_list)
 
     assert saved is not None
     assert saved["height"] == expected_height
@@ -135,8 +143,9 @@ def test_parse_and_save_block():
         assert block_tx_count == expected_tx_count
 
         # Additionally, check that each transaction exists.
-        for tx in sample_block["transactions"]:
-            tx_hash_str = tx.get("hash")
+        for tx in tx_list:
+            assert isinstance(tx, dict)
+            tx_hash_str = tx.get("hash", "")
             tx_hash = (
                 bytes.fromhex(tx_hash_str[2:])
                 if tx_hash_str.startswith("0x")

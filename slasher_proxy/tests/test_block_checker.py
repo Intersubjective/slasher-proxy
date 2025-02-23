@@ -1,4 +1,5 @@
 from pony.orm import commit, db_session
+from typing import cast
 
 from slasher_proxy.avalanche.block_checker import check_block
 from slasher_proxy.common import (
@@ -12,7 +13,6 @@ from slasher_proxy.common import (
     T_STATUS_SUBMITTED,
 )
 
-# Import your real models
 from slasher_proxy.common.model import (
     Block,
     BlockState,
@@ -74,13 +74,14 @@ def create_test_transaction(
             hash=tx_hash, from_address=from_address, nonce=nonce, replaces=replaces
         )
         commit()
-    return tx
+    # Let mypy know “tx” is definitely a Transaction:
+    return cast(Transaction, tx)
 
 
 @db_session
 def create_test_commitment(
     node: str, index: int, tx_hash: bytes, status: int = C_STATUS_PENDING
-) -> Commitment:
+) -> None:
     """
     Create a Commitment for a given node and transaction.
     Since Commitment.tx_hash is a reference to a Transaction, we create (or retrieve)
@@ -89,15 +90,14 @@ def create_test_commitment(
     tx = Transaction.get(hash=tx_hash)
     if not tx:
         tx = Transaction(hash=tx_hash, from_address="dummy", nonce=0)
-    comm = Commitment(node=node, tx_hash=tx.hash, index=index, status=status)
+    Commitment(node=node, tx_hash=tx.hash, index=index, status=status)
     commit()
-    return comm
 
 
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
-def test_block1_sunny_day():
+def test_block1_sunny_day() -> None:
     """
     Block 1 contains three valid transactions.
     All corresponding commitments (with indexes 1, 2, 3) are initially pending.
@@ -124,7 +124,7 @@ def test_block1_sunny_day():
         assert state.shift_index == 0
 
 
-def test_empty_block():
+def test_empty_block() -> None:
     """
     Simulate an error by creating a Block without any BlockTransactions.
     Expect no BlockState to be created.
@@ -142,7 +142,7 @@ def test_empty_block():
         assert state.block_number == 1
 
 
-def test_missing_commitment():
+def test_missing_commitment() -> None:
     """
     One transaction string is not valid hex.
     The invalid transaction should be skipped.
@@ -163,7 +163,7 @@ def test_missing_commitment():
         assert state.shift_index == 0
 
 
-def test_block_not_found():
+def test_block_not_found() -> None:
     """
     Calling check_block() with a block number that does not exist.
     Expect no BlockState to be created.
@@ -174,7 +174,7 @@ def test_block_not_found():
         assert state is None
 
 
-def test_prev_block_state_missing():
+def test_prev_block_state_missing() -> None:
     """
     For a block > 1, if the previous block's state is missing,
     processing should log an error and do nothing.
@@ -187,7 +187,7 @@ def test_prev_block_state_missing():
         assert state is None
 
 
-def test_reorder_transaction():
+def test_reorder_transaction() -> None:
     """
     For block 2, simulate a situation where a transaction corresponds to a commitment
     that was previously omitted. It should then be updated to REORDERED.
@@ -256,7 +256,7 @@ def test_reorder_transaction():
         assert com3.status == C_STATUS_OMITTED
 
 
-def test_pending_commitments_omitted_block2():
+def test_pending_commitments_omitted_block2() -> None:
     """
     For block 2, if some pending commitments in the expected range are not fulfilled,
     they should be marked as OMITTED.
@@ -290,7 +290,7 @@ def test_pending_commitments_omitted_block2():
         assert state.shift_index == 0
 
 
-def test_replacement_transaction():
+def test_replacement_transaction() -> None:
     with db_session:
         # Create a block with a single transaction (old transaction).
         create_test_commitment("nodeC", 1, b"oldtx", C_STATUS_PENDING)
