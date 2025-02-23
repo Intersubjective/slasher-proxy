@@ -102,8 +102,6 @@ def check_block(block_number: int) -> None:
     for c in commitments:
         c.status = C_STATUS_OMITTED
     shift_index += out_of_range_txs
-    print(f"Shift index: {shift_index}")
-    print(f"_____")
     offset_index += total_new_txs
     BlockState(
         block_number=block_number,

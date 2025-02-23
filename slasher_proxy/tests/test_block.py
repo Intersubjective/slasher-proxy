@@ -31,7 +31,7 @@ def create_test_block(block_number: int, node_id: str) -> Block:
 
 def test_block_creation() -> None:
     # Create a block using the helper function.
-    block = create_test_block(1, "nodeA")
+    create_test_block(1, "nodeA")
 
     # Retrieve it from the database and check its properties.
     with db_session:

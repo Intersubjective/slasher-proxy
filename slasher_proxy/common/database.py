@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Optional, Type, TypeVar, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
 from pydantic import PostgresDsn
 

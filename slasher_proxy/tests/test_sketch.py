@@ -68,7 +68,8 @@ def test_large_number_of_transactions() -> None:
     for i in range(num_transactions):
         tx = tx_hash(f"tx{i}".encode())
         acc.add_transaction(tx)
-    # Check that no counters overflowed (assuming counter_size=2 means max value is 65535).
+    # Check that no counters overflowed (assuming counter_size=2 means max
+    # value is 65535).
     assert all(c < 65535 for c in acc.counters)
 
 

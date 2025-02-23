@@ -79,7 +79,10 @@ class CountingBloomFilterAccumulator:
 
         if salt_end - salt_start != expected_salt_length:
             raise ValueError(
-                f"Salt length is incorrect. Expected {expected_salt_length}, got {salt_end - salt_start}"
+                (
+                    f"Salt length is incorrect. Expected {expected_salt_length}, "
+                    f"got {salt_end - salt_start}"
+                )
             )
 
         if min_counter_end > len(state):

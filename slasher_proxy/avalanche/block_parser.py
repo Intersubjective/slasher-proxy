@@ -1,7 +1,7 @@
 from typing import Any, Dict, cast
 
 import requests
-from pony.orm import commit, db_session
+from pony.orm import db_session
 
 from slasher_proxy.common.model import Block, BlockTransaction, Transaction
 

@@ -14,7 +14,7 @@ def upgrade_db(version: int) -> None:
     exit(1)
 
 
-@db_session 
+@db_session
 def check_db_version(network_name: str) -> None:
     v = AuxiliaryData.get(key=DB_VERSION_KEY)
     version = v.value if v else None

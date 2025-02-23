@@ -41,7 +41,8 @@ def test_add_single_transaction() -> None:
 
 
 def test_sequential_transactions() -> None:
-    """Adding multiple transactions sequentially should yield expected state using shift."""
+    """Adding multiple transactions sequentially should yield
+    expected state using shift."""
     init_state = b"\x00" * 32
     transactions = [b"tx1", b"tx2", b"tx3"]
     shift = 5

@@ -76,9 +76,7 @@ async def handle_send_raw_transaction(
         txn = Transaction.get(hash=tx_hash)
         if not txn:
             txn = Transaction(
-                hash=tx_hash,
-                raw_content=raw_content,
-                status=T_STATUS_SUBMITTED
+                hash=tx_hash, raw_content=raw_content, status=T_STATUS_SUBMITTED
             )
         Commitment(
             node=node_id,
