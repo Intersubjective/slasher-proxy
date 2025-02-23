@@ -1,6 +1,7 @@
-from typing import Any, ClassVar, Type, TypeVar, Optional, cast
+from typing import Any, ClassVar, Optional, Type, TypeVar, cast
 
 from pydantic import PostgresDsn
+
 from slasher_proxy.common import db
 from slasher_proxy.common.log import LOGGER
 from slasher_proxy.common.upgrade import check_db_version

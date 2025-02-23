@@ -1,6 +1,7 @@
+from typing import Any
+
 import click
 import uvicorn
-from typing import Any
 
 from slasher_proxy.asgi import create_slasher_app
 from slasher_proxy.common import db

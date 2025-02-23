@@ -1,5 +1,6 @@
+from typing import Any, Dict
+
 from pony.orm import db_session
-from typing import Dict, Any
 
 from slasher_proxy.avalanche.block_parser import parse_and_save_block
 from slasher_proxy.common.model import Block, BlockTransaction, Transaction

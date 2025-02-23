@@ -1,5 +1,6 @@
-from pony.orm import commit, db_session
 from typing import cast
+
+from pony.orm import commit, db_session
 
 from slasher_proxy.avalanche.block_checker import check_block
 from slasher_proxy.common import (
@@ -12,7 +13,6 @@ from slasher_proxy.common import (
     T_STATUS_IN_BLOCK,
     T_STATUS_SUBMITTED,
 )
-
 from slasher_proxy.common.model import (
     Block,
     BlockState,

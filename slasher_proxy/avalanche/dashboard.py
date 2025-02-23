@@ -1,7 +1,9 @@
 # dashboard.py
+from typing import Any, Dict, List
+
 from fastapi import FastAPI
 from pony.orm import db_session
-from typing import Any, Dict, List
+
 from slasher_proxy.common.model import Block, Commitment, NodeStats, Transaction
 
 app = FastAPI(title="Slasher Proxy Dashboard")

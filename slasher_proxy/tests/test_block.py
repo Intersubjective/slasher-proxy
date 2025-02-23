@@ -2,6 +2,7 @@
 
 # Import the module that initializes Pony ORM.
 from typing import Generator
+
 import pytest
 from pony.orm import commit, db_session
 
