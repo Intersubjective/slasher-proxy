@@ -22,7 +22,7 @@ def initialize_database() -> None:  # type: ignore
     # Use shared in-memory DB so all threads and the app see the same instance.
     init_db(
         provider="sqlite",
-        filename=":memory:?cache=shared",
+        filename=":memory:",
         create_db=True,
         create_tables=True,
     )
