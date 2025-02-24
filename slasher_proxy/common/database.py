@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional, Type, TypeVar, cast
 
 from pydantic import PostgresDsn
 
@@ -6,11 +6,14 @@ from slasher_proxy.common import db
 from slasher_proxy.common.log import LOGGER
 from slasher_proxy.common.upgrade import check_db_version
 
+T = TypeVar("T", bound=db.Entity)
+
 
 class GetOrInsertMixin:
     @classmethod
-    def get_or_insert(cls, **kwargs):
-        return cls.get(**kwargs) or cls(**kwargs)  # type: ignore[attr-defined]
+    def get_or_insert(cls: Type[T], **kwargs: Any) -> T:
+        # Cast the result to T instead of ignoring type errors.
+        return cast(T, cls.get(**kwargs) or cls(**kwargs))
 
 
 def start_db(dsn: PostgresDsn, network_name: Optional[str] = None) -> None:

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .avalanche import proxy_router
-from .avalanche.blockchecker import check_block
+from .avalanche.block_checker import check_block
 from .common.database import start_db
 from .common.debug_middleware import debug_exception_middleware
 from .common.log import LOGGER
@@ -47,7 +47,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_slasher_app() -> FastAPI:
     settings = get_settings()
-    LOGGER.setLevel(settings.log_level)
+    level = settings.log_level  # str | None
+    if level is None:
+        level_num = 20
+    elif level.isdigit():
+        level_num = int(level)
+    else:
+        level_num = 20
+    LOGGER.setLevel(level_num)
     app = FastAPI(title="Slasher RPC Proxy", lifespan=lifespan)
 
     app.middleware("http")(debug_exception_middleware)

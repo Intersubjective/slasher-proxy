@@ -1,4 +1,7 @@
-def decode_avalanche_transaction(raw_tx_hex):
+from typing import Any, Dict
+
+
+def decode_avalanche_transaction(raw_tx: str) -> Dict[str, Any]:
     # DUMMY
 
     # Extract transaction details
