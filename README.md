@@ -202,7 +202,7 @@ uvicorn slasher_proxy.main:app
 alternatively, use the direct CLI call form:
 ```bash
 poetry shell
-env PYTHONPATH=./ python slasher_proxy/main.py avalanche
+python -m slasher_proxy avalanche
 ```
 
 5. Running tests:

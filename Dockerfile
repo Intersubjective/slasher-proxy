@@ -20,4 +20,4 @@ RUN poetry install --no-root --without dev,test \
 COPY slasher_proxy /code/slasher_proxy
 
 # Run the application
-CMD ["poetry", "run", "uvicorn", "slasher_proxy.__main__:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["poetry", "run", "uvicorn", "slasher_proxy.main:app", "--host", "0.0.0.0", "--port", "80"]
