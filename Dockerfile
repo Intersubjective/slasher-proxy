@@ -17,7 +17,7 @@ RUN poetry install --no-root --without dev,test \
     && rm -rf $(poetry config cache-dir)/{cache,artifacts}
 
 # Copy application code
-COPY slasher_proxy /code/app
+COPY slasher_proxy /code/slasher_proxy
 
 # Run the application
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["poetry", "run", "uvicorn", "slasher_proxy.__main__:app", "--host", "0.0.0.0", "--port", "80"]
