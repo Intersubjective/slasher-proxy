@@ -3,6 +3,7 @@ from typing import Generator
 import pytest
 from pony.orm import commit, db_session
 
+from slasher_proxy.common import db
 from slasher_proxy.common.model import (
     AuxiliaryData,
     Block,
@@ -11,7 +12,6 @@ from slasher_proxy.common.model import (
     Commitment,
     NodeStats,
     Transaction,
-    db,
     init_db,
 )
 
