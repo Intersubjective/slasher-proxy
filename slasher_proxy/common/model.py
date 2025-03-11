@@ -3,7 +3,6 @@ from typing import Optional
 import logging
 from datetime import datetime
 
-from pony.orm import Database
 from pony.orm import Optional as PonyOptional
 from pony.orm import PrimaryKey, Required, Set, composite_index, composite_key
 
