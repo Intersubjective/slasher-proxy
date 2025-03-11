@@ -7,9 +7,8 @@ from pony.orm import Database
 from pony.orm import Optional as PonyOptional
 from pony.orm import PrimaryKey, Required, Set, composite_index, composite_key
 
-from slasher_proxy.common import C_STATUS_PENDING, T_STATUS_SUBMITTED
+from slasher_proxy.common import C_STATUS_PENDING, T_STATUS_SUBMITTED, db
 
-db = Database()
 Entity = db.Entity  # Added alias for mypy
 
 
