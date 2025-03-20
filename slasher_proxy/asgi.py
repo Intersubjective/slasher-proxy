@@ -7,6 +7,8 @@ from fastapi import FastAPI
 
 from .avalanche import proxy_router
 from .avalanche.block_checker import check_block
+from .avalanche.block_parser import parse_and_save_block
+from .avalanche.ws_blocks import WebSocketListener
 from .common.database import start_db
 from .common.debug_middleware import debug_exception_middleware
 from .common.log import LOGGER
@@ -20,6 +22,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     start_db(settings.dsn, network_name=settings.network_name)
 
     app.state.block_checker_task = None
+    app.state.websocket_listener = None
 
     if settings.blocks_channel:
         LOGGER.info("Starting LISTEN to Postgres")
@@ -28,10 +31,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 str(settings.dsn), settings.blocks_channel, check_block
             )
         )
+    elif settings.blocks_websocket_url:
+        LOGGER.info("Starting listening to websocket for new blocks")
+        app.state.websocket_listener = WebSocketListener(
+            settings.blocks_websocket_url, parse_and_save_block, check_block
+        )
+        app.state.block_checker_task = asyncio.create_task(
+            app.state.websocket_listener.listen()
+        )
     else:
         LOGGER.info(
             "Can't LISTEN to postgres blocks updates: "
-            "no NOTIFY channel name provided. "
+            "no NOTIFY channel name or websocket URL is provided."
             "BLOCKS_CHANNEL env var or settings.blocks_channel "
             "field must be set to a valid channel name "
             "for Postgres LISTEN to work correctly!"

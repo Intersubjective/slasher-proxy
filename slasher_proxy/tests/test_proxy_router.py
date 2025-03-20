@@ -26,7 +26,9 @@ class DummySettings(SlasherRpcProxySettings):
 # Create the FastAPI app and include the router.
 app = FastAPI()
 app.include_router(router)
-app.dependency_overrides[get_settings] = lambda: DummySettings()
+app.dependency_overrides[get_settings] = lambda: DummySettings(
+    blocks_websocket_url="ws://localhost:8546"
+)
 
 
 # --- Helper mocks for aiohttp.ClientSession ---

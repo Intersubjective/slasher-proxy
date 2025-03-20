@@ -1,9 +1,13 @@
 from typing import Any, Dict, cast
 
+import logging
+
 import requests
 from pony.orm import db_session
 
 from slasher_proxy.common.model import Block, BlockTransaction, Transaction
+
+LOGGER = logging.getLogger(__name__)
 
 
 def get_cchain_block_by_number(number: int) -> Dict[str, Any]:
@@ -68,12 +72,13 @@ def parse_and_save_block(json_data: Dict[str, Any], node_id: str) -> Dict[str, A
     with db_session:
         block = Block.get(hash=block_hash)
         if not block:
-            # Adjust to match your schema: if hash or node_id is required, supply them
             block = Block(hash=block_hash, number=height, node_id=node_id)
+            LOGGER.info(f"New block created: {height}")
 
         for i, tx_info in enumerate(txs):
             tx_hash_str = tx_info.get("hash")
             if not isinstance(tx_hash_str, str):
+                LOGGER.warning(f"Invalid transaction hash in block {height}, index {i}")
                 continue
 
             if tx_hash_str.startswith("0x"):
@@ -88,13 +93,11 @@ def parse_and_save_block(json_data: Dict[str, Any], node_id: str) -> Dict[str, A
                     from_address=str(tx_info.get("from") or ""),
                     nonce=int(tx_info.get("nonce") or "0", 16),
                 )
+                LOGGER.debug(f"New transaction created: {tx_hash_str}")
 
-            # If BlockTransaction.order is required, supply it:
-            # Option 1: Use enumeration
             BlockTransaction(block=block, transaction=txn, order=i)
-            # Alternatively, if transactionIndex is present as hex, convert that:
-            # order = int(tx_info["transactionIndex"], 16)
 
+    LOGGER.info(f"Block {height} processed with {len(txs)} transactions")
     return {
         "height": height,
         "transaction_count": len(txs),
