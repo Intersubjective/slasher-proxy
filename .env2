@@ -1,4 +1,0 @@
-RPC_URL="http://localhost.localhost"
-DSN="postgresql://slasher_user:securepassword@localhost:5432/slasher_db"
-BLOCKS_CHANNEL="new_block"
-LOG_LEVEL="DEBUG"
