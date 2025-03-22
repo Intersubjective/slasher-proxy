@@ -1,5 +1,4 @@
 # block_checker.py
-import logging
 
 from pony.orm import db_session
 
@@ -12,9 +11,8 @@ from slasher_proxy.common import (
     C_STATUS_UNEXPECTED,
     T_STATUS_IN_BLOCK,
 )
+from slasher_proxy.common.log import LOGGER
 from slasher_proxy.common.model import Block, BlockState, Commitment, Transaction
-
-LOGGER = logging.getLogger(__name__)
 
 
 @db_session

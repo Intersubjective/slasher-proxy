@@ -9,10 +9,16 @@ from fastapi.responses import JSONResponse
 from pony.orm import db_session
 
 from slasher_proxy.common import C_STATUS_PENDING, T_STATUS_SUBMITTED
+from slasher_proxy.common.log import LOGGER
 from slasher_proxy.common.model import Commitment, NodeStats, Transaction
 from slasher_proxy.common.settings import SlasherRpcProxySettings, get_settings
 
 router = APIRouter()
+
+
+# ACTHUNG!!! HTTPExceptions are caught by FastAPI itself
+# and not propagated to  the custom exception middleware!
+# That's why we log error explicitly here
 
 
 @router.post("/eth_sendRawTransaction")
@@ -30,6 +36,7 @@ async def handle_send_raw_transaction(
     ):
         raise HTTPException(status_code=400, detail="Invalid params")
     raw_content = json.dumps(body).encode("utf-8")  # Convert JSON to bytes
+    LOGGER.debug(raw_content)
 
     # Forward the request to the validator node.
     try:
@@ -37,6 +44,7 @@ async def handle_send_raw_transaction(
             async with session.post(settings.rpc_url, json=body) as response:
                 response_data = await response.json()
     except Exception as e:
+        LOGGER.error(f"Error forwarding to validator: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Error forwarding to validator: {str(e)}"
         )
@@ -44,13 +52,15 @@ async def handle_send_raw_transaction(
     # Check for errors in the response.
     if "error" in response_data:
         error_message = response_data["error"].get("message", "Unknown error")
+        LOGGER.error(f"Transaction rejected: {error_message}")
         raise HTTPException(
             status_code=400, detail=f"Transaction rejected: {error_message}"
         )
 
-    # Validator’s response is expected to include keys "txHash", "commitment", "txIndex"
+    # Validator's response is expected to include keys "txHash", "commitment", "txIndex"
     result = response_data.get("result")
     if not (isinstance(result, dict) and "txHash" in result and "commitment" in result):
+        LOGGER.error(f"Invalid result format from validator: {result}")
         raise HTTPException(
             status_code=400, detail="Invalid result format from validator"
         )
