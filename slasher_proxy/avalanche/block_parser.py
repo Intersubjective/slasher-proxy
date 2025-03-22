@@ -1,13 +1,10 @@
 from typing import Any, Dict, cast
 
-import logging
-
 import requests
 from pony.orm import db_session
 
+from slasher_proxy.common.log import LOGGER
 from slasher_proxy.common.model import Block, BlockTransaction, Transaction
-
-LOGGER = logging.getLogger(__name__)
 
 
 def get_cchain_block_by_number(number: int) -> Dict[str, Any]:
